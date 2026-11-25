@@ -1,0 +1,12 @@
+post_id,platform,content_type,post_date,views,likes,comments,shares,status,viral_outlier
+1,YouTube,Video,2026-11-01 09:00:00,1000,100,10,5,Active,False
+2,Instagram,Reel,2026-11-02 12:00:00,2500,300,25,30,Active,False
+3,YouTube,Short,2026-11-03 15:00:00,0,0,0,0,Active,False
+4,Instagram,Image,2026-11-04 18:00:00,4000,400,40,20,Active,False
+5,YouTube,Video,2026-11-05 10:00:00,1500,150,15,10,Active,False
+6,Instagram,Reel,2026-11-06 14:00:00,8000,900,90,80,Active,False
+7,YouTube,Short,2026-11-07 19:00:00,500,50,5,3,Active,False
+8,Instagram,Image,2026-11-08 11:00:00,1200,100,10,8,Active,False
+9,YouTube,Video,2026-11-09 16:00:00,1000000,150000,20000,50000,Active,True
+10,Instagram,Reel,2026-11-10 20:00:00,3000,350,35,25,Active,False
+12,Instagram,Image,2026-11-12 17:00:00,0,0,0,0,Active,False
