@@ -16,7 +16,14 @@ def load_data():
     df["post_date"] = pd.to_datetime(df["post_date"])
     return df
 
+
+@st.cache_data
+def load_source_data():
+    return pd.read_csv("social_media_data.csv")
+
+
 df = load_data()
+source_df = load_source_data()
 
 # DASHBOARD TITLE
 st.title("📊 Social Media Engagement Analysis")
@@ -27,14 +34,14 @@ st.sidebar.header("Dashboard Filters")
 
 platforms = st.sidebar.multiselect(
     "Select Platform",
-    options=sorted(df["platform"].dropna().unique()),
-    default=sorted(df["platform"].dropna().unique())
+    options=sorted(source_df["platform"].dropna().unique()),
+    default=sorted(source_df["platform"].dropna().unique())
 )
 
 content_types = st.sidebar.multiselect(
     "Select Content Type",
-    options=sorted(df["content_type"].dropna().unique()),
-    default=sorted(df["content_type"].dropna().unique())
+    options=sorted(source_df["content_type"].dropna().unique()),
+    default=sorted(source_df["content_type"].dropna().unique())
 )
 
 # APPLY FILTERS
@@ -42,6 +49,35 @@ filtered_df = df[
     (df["platform"].isin(platforms)) &
     (df["content_type"].isin(content_types))
 ].copy()
+
+quality_df = source_df.drop_duplicates(
+    subset="post_id",
+    keep="first"
+).copy()
+quality_df["views"] = pd.to_numeric(
+    quality_df["views"],
+    errors="coerce"
+)
+quality_df = quality_df[
+    quality_df["platform"].isin(platforms) &
+    quality_df["content_type"].isin(content_types)
+].copy()
+
+deleted_posts = quality_df[quality_df["status"] == "Deleted"]
+active_quality_df = quality_df[quality_df["status"] != "Deleted"].copy()
+zero_view_posts = active_quality_df[active_quality_df["views"] == 0]
+
+positive_views = active_quality_df.loc[
+    active_quality_df["views"] > 0,
+    "views"
+]
+quartile_1 = positive_views.quantile(0.25)
+quartile_3 = positive_views.quantile(0.75)
+outlier_limit = quartile_3 + 1.5 * (quartile_3 - quartile_1)
+active_quality_df["viral_outlier"] = (
+    active_quality_df["views"] > outlier_limit
+)
+viral_outliers = active_quality_df[active_quality_df["viral_outlier"]]
 
 # KPI CALCULATIONS
 total_posts = len(filtered_df)
@@ -63,6 +99,52 @@ if pd.notna(average_er):
     col4.metric("Average Engagement Rate", f"{average_er:.2f}%")
 else:
     col4.metric("Average Engagement Rate", "N/A")
+
+# DATA QUALITY CHECKS
+st.subheader("Data Quality Checks")
+st.caption(
+    "Counts and post lists follow the selected platform and content-type filters."
+)
+
+quality_col1, quality_col2, quality_col3 = st.columns(3)
+quality_col1.metric("Zero-View Posts", f"{len(zero_view_posts):,}")
+quality_col2.metric("Deleted Posts", f"{len(deleted_posts):,}")
+quality_col3.metric("Viral Outlier Posts", f"{len(viral_outliers):,}")
+
+zero_tab, deleted_tab, outlier_tab = st.tabs(
+    ["Zero-View Posts", "Deleted Posts", "Viral Outliers"]
+)
+quality_columns = [
+    "post_id", "platform", "content_type", "post_date", "views", "status"
+]
+
+with zero_tab:
+    if zero_view_posts.empty:
+        st.info("No zero-view posts match these filters.")
+    else:
+        st.dataframe(
+            zero_view_posts[quality_columns],
+            use_container_width=True
+        )
+
+with deleted_tab:
+    if deleted_posts.empty:
+        st.info("No deleted posts match these filters.")
+    else:
+        st.dataframe(
+            deleted_posts[quality_columns],
+            use_container_width=True
+        )
+
+with outlier_tab:
+    if viral_outliers.empty:
+        st.info("No viral outlier posts match these filters.")
+    else:
+        st.write(f"IQR upper limit: {outlier_limit:,.2f} views")
+        st.dataframe(
+            viral_outliers[quality_columns],
+            use_container_width=True
+        )
 
 # PREPARE ANALYSIS
 filtered_df["posting_day"] = (
