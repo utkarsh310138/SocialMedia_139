@@ -1,6 +1,4 @@
-
 import pandas as pd
-
 # STEP 1: Load cleaned dataset
 df = pd.read_csv("cleaned_social_media_data.csv")
 
